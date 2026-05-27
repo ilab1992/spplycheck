@@ -1,0 +1,1282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Supply Chain Tabletop — Dependency & Library Compromise</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;500;600;700&family=Exo+2:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080c10;
+    --surface: #0d1117;
+    --surface2: #111820;
+    --border: #1e2d3d;
+    --border-bright: #2a4060;
+    --accent: #00d4ff;
+    --accent2: #ff6b35;
+    --accent3: #39ff14;
+    --warn: #ffb300;
+    --danger: #ff3b3b;
+    --text: #c8d8e8;
+    --text-dim: #5a7a99;
+    --text-bright: #e8f4ff;
+    --phase-detect: #00d4ff;
+    --phase-contain: #ff6b35;
+    --phase-inv: #b44fff;
+    --phase-rem: #39ff14;
+    --phase-post: #ffb300;
+    --font-mono: 'Share Tech Mono', monospace;
+    --font-head: 'Rajdhani', sans-serif;
+    --font-body: 'Exo 2', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    min-height: 100vh;
+    background-image:
+      radial-gradient(ellipse at 20% 0%, rgba(0,212,255,0.04) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 100%, rgba(57,255,20,0.03) 0%, transparent 50%),
+      linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.3) 100%);
+  }
+
+  /* SCAN LINE OVERLAY */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.08) 2px,
+      rgba(0,0,0,0.08) 4px
+    );
+    pointer-events: none;
+    z-index: 1000;
+  }
+
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+  }
+
+  /* HEADER */
+  .header {
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 28px;
+    margin-bottom: 40px;
+    position: relative;
+  }
+
+  .header::before {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    width: 200px;
+    height: 1px;
+    background: linear-gradient(90deg, var(--accent), transparent);
+  }
+
+  .header-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  .tag-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+  }
+
+  .tag {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border: 1px solid;
+    border-radius: 2px;
+  }
+
+  .tag-red { border-color: var(--danger); color: var(--danger); background: rgba(255,59,59,0.08); }
+  .tag-blue { border-color: var(--accent); color: var(--accent); background: rgba(0,212,255,0.08); }
+  .tag-yellow { border-color: var(--warn); color: var(--warn); background: rgba(255,179,0,0.08); }
+
+  h1 {
+    font-family: var(--font-head);
+    font-size: clamp(22px, 4vw, 36px);
+    font-weight: 700;
+    color: var(--text-bright);
+    letter-spacing: 0.05em;
+    line-height: 1.15;
+  }
+
+  h1 span {
+    color: var(--accent);
+  }
+
+  .subtitle {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+    margin-top: 6px;
+  }
+
+  .meta-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    margin-top: 24px;
+  }
+
+  .meta-cell {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    padding: 10px 14px;
+  }
+
+  .meta-label {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  .meta-value {
+    font-family: var(--font-head);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-bright);
+  }
+
+  /* SCENARIO BOX */
+  .scenario-box {
+    background: var(--surface);
+    border: 1px solid var(--border-bright);
+    border-left: 4px solid var(--accent2);
+    padding: 20px 24px;
+    margin-bottom: 36px;
+    position: relative;
+  }
+
+  .scenario-box::before {
+    content: 'SCENARIO BRIEF';
+    position: absolute;
+    top: -9px;
+    left: 16px;
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    color: var(--accent2);
+    background: var(--surface);
+    padding: 0 8px;
+  }
+
+  .scenario-box p {
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--text);
+  }
+
+  .scenario-box strong {
+    color: var(--accent2);
+  }
+
+  /* PROGRESS BAR */
+  .progress-section {
+    margin-bottom: 32px;
+  }
+
+  .progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  .progress-label {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    color: var(--text-dim);
+  }
+
+  .progress-count {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--accent);
+  }
+
+  .progress-bar-bg {
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent3));
+    border-radius: 2px;
+    transition: width 0.4s ease;
+    width: 0%;
+  }
+
+  /* PHASE SECTIONS */
+  .phase {
+    margin-bottom: 32px;
+  }
+
+  .phase-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 18px;
+    margin-bottom: 4px;
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .phase-header::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0.05;
+  }
+
+  .phase-1 .phase-header { border-left: 3px solid var(--phase-detect); }
+  .phase-2 .phase-header { border-left: 3px solid var(--phase-contain); }
+  .phase-3 .phase-header { border-left: 3px solid var(--phase-inv); }
+  .phase-4 .phase-header { border-left: 3px solid var(--phase-rem); }
+  .phase-5 .phase-header { border-left: 3px solid var(--phase-post); }
+
+  .phase-1 .phase-header { background: rgba(0,212,255,0.06); }
+  .phase-2 .phase-header { background: rgba(255,107,53,0.06); }
+  .phase-3 .phase-header { background: rgba(180,79,255,0.06); }
+  .phase-4 .phase-header { background: rgba(57,255,20,0.06); }
+  .phase-5 .phase-header { background: rgba(255,179,0,0.06); }
+
+  .phase-num {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    opacity: 0.7;
+    min-width: 26px;
+  }
+
+  .phase-1 .phase-num { color: var(--phase-detect); }
+  .phase-2 .phase-num { color: var(--phase-contain); }
+  .phase-3 .phase-num { color: var(--phase-inv); }
+  .phase-4 .phase-num { color: var(--phase-rem); }
+  .phase-5 .phase-num { color: var(--phase-post); }
+
+  .phase-title {
+    font-family: var(--font-head);
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    flex: 1;
+  }
+
+  .phase-1 .phase-title { color: var(--phase-detect); }
+  .phase-2 .phase-title { color: var(--phase-contain); }
+  .phase-3 .phase-title { color: var(--phase-inv); }
+  .phase-4 .phase-title { color: var(--phase-rem); }
+  .phase-5 .phase-title { color: var(--phase-post); }
+
+  .phase-badge {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    padding: 3px 10px;
+    border-radius: 2px;
+    border: 1px solid;
+  }
+
+  .phase-1 .phase-badge { border-color: var(--phase-detect); color: var(--phase-detect); background: rgba(0,212,255,0.1); }
+  .phase-2 .phase-badge { border-color: var(--phase-contain); color: var(--phase-contain); background: rgba(255,107,53,0.1); }
+  .phase-3 .phase-badge { border-color: var(--phase-inv); color: var(--phase-inv); background: rgba(180,79,255,0.1); }
+  .phase-4 .phase-badge { border-color: var(--phase-rem); color: var(--phase-rem); background: rgba(57,255,20,0.1); }
+  .phase-5 .phase-badge { border-color: var(--phase-post); color: var(--phase-post); background: rgba(255,179,0,0.1); }
+
+  .phase-chevron {
+    font-size: 12px;
+    transition: transform 0.2s ease;
+    color: var(--text-dim);
+  }
+
+  .phase-body {
+    border: 1px solid var(--border);
+    border-top: none;
+  }
+
+  /* CHECKLIST ITEMS */
+  .check-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: background 0.15s;
+    position: relative;
+  }
+
+  .check-item:last-child {
+    border-bottom: none;
+  }
+
+  .check-item:hover {
+    background: rgba(255,255,255,0.02);
+  }
+
+  .check-item.checked {
+    background: rgba(57,255,20,0.025);
+  }
+
+  .check-item.checked .check-text {
+    opacity: 0.45;
+    text-decoration: line-through;
+    text-decoration-color: rgba(57,255,20,0.3);
+  }
+
+  .checkbox {
+    width: 18px;
+    height: 18px;
+    min-width: 18px;
+    border: 1px solid var(--border-bright);
+    margin-top: 1px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    background: var(--surface);
+  }
+
+  .check-item.checked .checkbox {
+    border-color: var(--accent3);
+    background: rgba(57,255,20,0.15);
+  }
+
+  .checkmark {
+    display: none;
+    color: var(--accent3);
+    font-size: 12px;
+    font-weight: bold;
+    line-height: 1;
+  }
+
+  .check-item.checked .checkmark {
+    display: block;
+  }
+
+  .check-content {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .check-text {
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--text);
+    transition: opacity 0.2s;
+    font-family: var(--font-body);
+    font-weight: 400;
+  }
+
+  .check-note {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-top: 5px;
+    line-height: 1.5;
+  }
+
+  .check-note .kw {
+    color: var(--accent);
+  }
+
+  .priority-pill {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    padding: 2px 7px;
+    border-radius: 2px;
+    border: 1px solid;
+    white-space: nowrap;
+    margin-top: 2px;
+    align-self: flex-start;
+  }
+
+  .priority-crit { border-color: var(--danger); color: var(--danger); background: rgba(255,59,59,0.08); }
+  .priority-high { border-color: var(--warn); color: var(--warn); background: rgba(255,179,0,0.08); }
+  .priority-med { border-color: var(--accent); color: var(--accent); background: rgba(0,212,255,0.08); }
+
+  /* DISCUSSION PROMPT */
+  .discussion-prompt {
+    background: var(--surface2);
+    border: 1px dashed var(--border-bright);
+    padding: 12px 16px;
+    margin: 4px 0 4px 32px;
+  }
+
+  .dp-label {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    color: var(--accent2);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  .dp-question {
+    font-size: 13px;
+    color: var(--text-dim);
+    font-style: italic;
+    line-height: 1.55;
+  }
+
+  /* NOTES AREA */
+  .notes-row {
+    padding: 10px 18px 14px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(255,255,255,0.01);
+  }
+
+  .notes-label {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  .notes-input {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    padding: 8px 12px;
+    resize: vertical;
+    min-height: 54px;
+    outline: none;
+    line-height: 1.5;
+    transition: border-color 0.2s;
+  }
+
+  .notes-input:focus {
+    border-color: var(--accent);
+  }
+
+  .notes-input::placeholder {
+    color: var(--text-dim);
+    opacity: 0.6;
+  }
+
+  /* ACTION BUTTONS */
+  .controls {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 36px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+  }
+
+  .btn {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 10px 20px;
+    border: 1px solid;
+    cursor: pointer;
+    background: transparent;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .btn-primary { border-color: var(--accent); color: var(--accent); }
+  .btn-primary:hover { background: rgba(0,212,255,0.1); }
+
+  .btn-danger { border-color: var(--danger); color: var(--danger); }
+  .btn-danger:hover { background: rgba(255,59,59,0.1); }
+
+  .btn-warn { border-color: var(--warn); color: var(--warn); }
+  .btn-warn:hover { background: rgba(255,179,0,0.1); }
+
+  /* STATS ROW */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 8px;
+    margin-bottom: 32px;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 14px 16px;
+    text-align: center;
+  }
+
+  .stat-value {
+    font-family: var(--font-mono);
+    font-size: 26px;
+    font-weight: bold;
+    display: block;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .stat-label {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+
+  .stat-total .stat-value { color: var(--text-bright); }
+  .stat-done .stat-value { color: var(--accent3); }
+  .stat-pending .stat-value { color: var(--warn); }
+  .stat-crit .stat-value { color: var(--danger); }
+
+  /* PRINT STYLES */
+  @media print {
+    body::before { display: none; }
+    .controls { display: none; }
+    body { background: white; color: black; }
+  }
+
+  /* ANIMATIONS */
+  @keyframes fadeSlide {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .phase { animation: fadeSlide 0.3s ease both; }
+  .phase:nth-child(1) { animation-delay: 0.05s; }
+  .phase:nth-child(2) { animation-delay: 0.10s; }
+  .phase:nth-child(3) { animation-delay: 0.15s; }
+  .phase:nth-child(4) { animation-delay: 0.20s; }
+  .phase:nth-child(5) { animation-delay: 0.25s; }
+
+  .check-item:hover .checkbox {
+    border-color: var(--accent);
+  }
+
+  .separator {
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    padding: 6px 18px;
+  }
+
+  .separator-label {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="tag-row">
+      <span class="tag tag-red">CLASSIFICATION: INTERNAL</span>
+      <span class="tag tag-blue">EXERCISE TYPE: TABLETOP</span>
+      <span class="tag tag-yellow">THREAT: SUPPLY CHAIN</span>
+    </div>
+    <div class="header-top">
+      <div>
+        <h1>SUPPLY CHAIN COMPROMISE<br><span>Dependency & Library Injection</span></h1>
+        <div class="subtitle">// INCIDENT RESPONSE TABLETOP CHECKLIST // DFIR USE ONLY</div>
+      </div>
+    </div>
+    <div class="meta-grid">
+      <div class="meta-cell"><span class="meta-label">Exercise Date</span><span class="meta-value" id="ex-date">—</span></div>
+      <div class="meta-cell"><span class="meta-label">Facilitator</span><span class="meta-value">_____________</span></div>
+      <div class="meta-cell"><span class="meta-label">Scribe</span><span class="meta-value">_____________</span></div>
+      <div class="meta-cell"><span class="meta-label">Exercise Duration</span><span class="meta-value">~2–3 Hours</span></div>
+      <div class="meta-cell"><span class="meta-label">MITRE ATT&CK</span><span class="meta-value">T1195.001</span></div>
+    </div>
+  </div>
+
+  <!-- SCENARIO -->
+  <div class="scenario-box">
+    <p>Your organization's CI/CD pipeline has ingested a build that includes a widely-used open-source library. Security tooling has flagged anomalous outbound connections originating from a production service. Initial triage suggests the library version pulled last night contains <strong>malicious code inserted via a compromised maintainer account</strong>. The artifact has potentially been deployed to multiple environments. You do not yet know the full blast radius.</p>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats-row">
+    <div class="stat-card stat-total"><span class="stat-value" id="stat-total">0</span><span class="stat-label">Total Items</span></div>
+    <div class="stat-card stat-done"><span class="stat-value" id="stat-done">0</span><span class="stat-label">Completed</span></div>
+    <div class="stat-card stat-pending"><span class="stat-value" id="stat-pending">0</span><span class="stat-label">Remaining</span></div>
+    <div class="stat-card stat-crit"><span class="stat-value" id="stat-crit">0</span><span class="stat-label">Critical Open</span></div>
+  </div>
+
+  <!-- PROGRESS -->
+  <div class="progress-section">
+    <div class="progress-header">
+      <span class="progress-label">// OVERALL COMPLETION</span>
+      <span class="progress-count" id="progress-pct">0%</span>
+    </div>
+    <div class="progress-bar-bg"><div class="progress-bar-fill" id="progress-bar"></div></div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════
+       PHASE 1 — DETECTION & INITIAL TRIAGE
+  ════════════════════════════════════════════════ -->
+  <div class="phase phase-1">
+    <div class="phase-header" onclick="togglePhase(this)">
+      <span class="phase-num">P-01</span>
+      <span class="phase-title">DETECTION & INITIAL TRIAGE</span>
+      <span class="phase-badge">IDENTIFY</span>
+      <span class="phase-chevron">▼</span>
+    </div>
+    <div class="phase-body">
+
+      <div class="separator"><span class="separator-label">Initial Discovery</span></div>
+
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="checkbox"><span class="checkmark">✓</span></div>
+        <div class="check-content">
+          <div class="check-text">Identify the specific package(s), library name(s), and version(s) flagged or suspected</div>
+          <div class="check-note">Record exact package name, registry (npm, PyPI, Maven, NuGet, etc.), and version string. <span class="kw">Hash the artifact</span> (SHA-256).</div>
+        </div>
+        <span class="priority-pill priority-crit">CRITICAL</span>
+      </div>
+
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="checkbox"><span class="checkmark">✓</span></div>
+        <div class="check-content">
+          <div class="check-text">Determine the initial detection vector — was this caught by SCA tooling, EDR, SIEM alert, external advisory (NVD, OSV, vendor), or manual discovery?</div>
+          <div class="check-note"><span class="kw">DISCUSSION:</span> What is our standard detection path for malicious packages? Is it reactive or proactive?</div>
+        </div>
+        <span class="priority-pill priority-crit">CRITICAL</span>
+      </div>
+
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="checkbox"><span class="checkmark">✓</span></div>
+        <div class="check-content">
+          <div class="check-text">Confirm whether the malicious version was introduced via direct dependency or transitive (indirect) dependency</div>
+          <div class="check-note">Pull dependency trees across all affected repos. <span class="kw">Tools:</span> npm ls, pip-tree, mvn dependency:tree, Snyk, Dependabot graph.</div>
+        </div>
+        <span class="priority-pill priority-crit">CRITICAL</span>
+      </div>
+
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="checkbox"><span class="checkmark">✓</span></div>
+        <div class="check-content">
+          <div class="check-text">Establish the first time the malicious version was pulled into any environment — build logs, artifact repository timestamps, lock file commits</div>
+          <div class="check-note">Check <span class="kw">package-lock.json / poetry.lock / go.sum</span> git history for when the version pin changed.</div>
+        </div>
+        <span class="priority-pill priority-high">HIGH</span>
+      </div>
+
+      <div class="discussion-prompt">
+        <div class="dp-label">💬 Discussion Prompt</div>
+        <div class="dp-question">Do we have a software bill of materials (SBOM) for affected services? If not, how long would it take us to generate one? Who owns that process?</div>
+      </div>
+
+      <div class="separator"><span class="separator-label">Scope Assessment</span></div>
+
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="checkbox"><span class="checkmark">✓</span></div>
+        <div class="check-content">
+          <div class="check-text">Enumerate all repositories, services, and applications consuming the compromised package</div>
+          <div class="check-note">Search across <span class="kw">all</span> repos — monorepo, microservices, internal tooling, CI scripts, Docker base images, and lambdas.</div>
+        </div>
+        <span class="priority-pill priority-crit">CRITICAL</span>
+      </div>
+
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="checkbox"><span class="checkmark">✓</span></div>
+        <div class="check-content">
+          <div class="check-text">Determine which environments have executed code from the malicious build: dev, staging, production, CI/CD agents</div>
+        </div>
+        <span class="priority-pill priority-crit">CRITICAL</span>
+      </div>
+
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="checkbox"><span class="checkmark">✓</span></div>
+        <div class="check-content">
+          <div class="check-text">Assess data sensitivity of systems affected — PII, credentials, secrets, intellectual property, customer data</div>
+          <div class="check-note"><span class="kw">DISCUSSION:</span> What is the worst-case data exposure scenario? Who needs to be looped in for breach assessment?</div>
+        </div>
+        <span class="priority-pill priority-high">HIGH</span>
+      </div>
+
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="checkbox"><span class="checkmark">✓</span></div>
+        <div class="check-content">
+          <div class="check-text">Analyze the malicious code — understand what it does (backdoor, credential harvest, crypto miner, data exfiltration, C2 beaconing)</div>
+          <div class="check-note">Perform static analysis in an isolated sandbox. Map behavior to <span class="kw">MITRE ATT&CK T1195.001, T1059, T1041.</span></div>
+        </div>
+        <span class="priority-pill priority-crit">CRITICAL</span>
+      </div>
+
+      <div class="notes-row">
+        <div class="notes-label">// Phase Notes</div>
+        <textarea class="notes-input" placeholder="Record findings, decisions, and action items from detection & triage discussion..."></textarea>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════
+       PHASE 2 — CONTAINMENT
+  ════════════════════════════════════════════════ -->
+  <div class="phase phase-2">
+    <div class="phase-header" onclick="togglePhase(this)">
+      <span class="phase-num">P-02</span>
+      <span class="phase-title">CONTAINMENT</span>
+      <span class="phase-badge">ISOLATE</span>
+      <span class="phase-chevron">▼</span>
+    </div>
+    <div class="phase-body">
+
+      <div class="separator"><span class="separator-label">Immediate Actions</span></div>
+
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="checkbox"><span class="checkmark">✓</span></div>
+        <div class="check-content">
+          <div class="check-text">Block or quarantine the malicious package version in the artifact repository / package manager (Nexus, Artifactory, npm private registry, etc.)</div>
+        </div>
+        <span class="priority-pill priority-crit">CRITICAL</span>
+      </div>
+
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="checkbox"><span class="checkmark">✓</span></div>
+        <div class="check-content">
+          <div class="check-text">Pin or lock all dependent packages to known-good versions in version control — freeze lockfiles and prevent automatic upgrades</div>
+          <div class="check-note">Add <span class="kw">temporary CI gate</span> to reject builds consuming unapproved package versions.</div>
+        </div>
+        <span class="priority-pill priority-crit">CRITICAL</span>
+      </div>
+
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="checkbox"><span class="checkmark">✓</span></div>
+        <div class="check-content">
+          <div class="check-text">Halt deployments to production until the dependency is remediated and builds are verified clean</div>
+          <div class="check-note"><span class="kw">DISCUSSION:</span> What is the business impact of a deployment freeze? Who has authority to approve deployment exceptions?</div>
+        </div>
+        <span class="priority-pill priority-crit">CRITICAL</span>
+      </div>
+
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="checkbox"><span class="checkmark">✓</span></div>
+        <div class="check-content">
+          <div class="check-text">Isolate affected production hosts or containers from the network if active exploitation/C2 activity is confirmed</div>
+        </div>
+        <span class="priority-pill priority-high">HIGH</span>
+      </div>
+
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="checkbox"><span class="checkmark">✓</span></div>
+        <div class="check-content">
+          <div class="check-text">Block outbound connections to identified C2 IP addresses, domains, or URLs at the perimeter firewall and endpoint level</div>
+          <div class="check-note">Push <span class="kw">IOC blocklists</span> to proxy, firewall, DNS sinkhole, and EDR platform simultaneously.</div>
+        </div>
+        <span class="priority-pill priority-high">HIGH</span>
+      </div>
+
+      <div class="separator"><span class="separator-label">Credential & Secrets Management</span></div>
+
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="checkbox"><span class="checkmark">✓</span></div>
+        <div class="check-content">
+          <div class="check-text">Rotate all secrets, API keys, tokens, and credentials accessible to affected services — assume all were exfiltrated</div>
+          <div class="check-note"><span class="kw">Include:</span> cloud provider creds, DB connection strings, JWT secrets, OAuth tokens, pipeline secrets, SSH keys.</div>
+        </div>
+        <span class="priority-pill priority-crit">CRITICAL</span>
+      </div>
+
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="checkbox"><span class="checkmark">✓</span></div>
+        <div class="check-content">
+          <div class="check-text">Audit secrets manager (Vault, AWS Secrets Manager, Azure Key Vault) for access logs during the window of compromise</div>
+        </div>
+        <span class="priority-pill priority-high">HIGH</span>
+      </div>
+
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="checkbox"><span class="checkmark">✓</span></div>
+        <div class="check-content">
+          <div class="check-text">Revoke and reissue service account credentials and CI/CD pipeline tokens</div>
+          <div class="check-note"><span class="kw">DISCUSSION:</span> Do our pipeline tokens follow least-privilege? Could the malicious package have used them to pivot?</div>
+        </div>
+        <span class="priority-pill priority-high">HIGH</span>
+      </div>
+
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="checkbox"><span class="checkmark">✓</span></div>
+        <div class="check-content">
+          <div class="check-text">Check build environment and CI agents for any persistence mechanisms planted during execution of the malicious code</div>
+        </div>
+        <span class="priority-pill priority-high">HIGH</span>
+      </div>
+
+      <div class="discussion-prompt">
+        <div class="dp-label">💬 Discussion Prompt</div>
+        <div class="dp-question">If the attacker had full code execution during a build, what lateral movement paths are available? Can they reach production databases, cloud IAM, internal tooling, or source code repositories?</div>
+      </div>
+
+      <div class="notes-row">
+        <div class="notes-label">// Phase Notes</div>
+        <textarea class="notes-input" placeholder="Record containment decisions, blockers, and action items..."></textarea>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════
+       PHASE 3 — INVESTIGATION & FORENSICS
+  ════════════════════════════════════════════════ -->
+  <div class="phase phase-3">
+    <div class="phase-header" onclick="togglePhase(this)">
+      <span class="phase-num">P-03</span>
+      <span class="phase-title">INVESTIGATION & FORENSICS</span>
+      <span class="phase-badge">ANALYZE</span>
+      <span class="phase-chevron">▼</span>
+    </div>
+    <div class="phase-body">
+
+      <div class="separator"><span class="separator-label">Log Analysis</span></div>
+
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="checkbox"><span class="checkmark">✓</span></div>
+        <div class="check-content">
+          <div class="check-text">Pull network flow / DNS / proxy logs for all hosts that ran the malicious package — look for beaconing, data staging, and exfiltration patterns</div>
+          <div class="check-note"><span class="kw">Time window:</span> From first ingestion of malicious version to present. Check for <span class="kw">DNS tunneling, HTTP POST to external IPs, encoded payloads.</span></div>
+        </div>
+        <span class="priority-pill priority-crit">CRITICAL</span>
+      </div>
+
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="checkbox"><span class="checkmark">✓</span></div>
+        <div class="check-content">
+          <div class="check-text">Review CI/CD pipeline execution logs for the affected builds — identify what commands ran, what files were created/modified, what network calls were made during build time</div>
+        </div>
+        <span class="priority-pill priority-crit">CRITICAL</span>
+      </div>
+
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="checkbox"><span class="checkmark">✓</span></div>
+        <div class="check-content">
+          <div class="check-text">Audit cloud provider access logs (CloudTrail, Azure Monitor, GCP Audit) for anomalous API calls from affected services during the compromise window</div>
+        </div>
+        <span class="priority-pill priority-high">HIGH</span>
+      </div>
+
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="checkbox"><span class="checkmark">✓</span></div>
+        <div class="check-content">
+          <div class="check-text">Examine EDR/XDR telemetry for process executions, file writes, registry changes, and network connections spawned by the malicious dependency</div>
+          <div class="check-note"><span class="kw">MDE hunters:</span> DeviceProcessEvents, DeviceNetworkEvents, DeviceFileEvents filtered to affected host + time window.</div>
+        </div>
+        <span class="priority-pill priority-high">HIGH</span>
+      </div>
+
+      <div class="separator"><span class="separator-label">Attack Chain Reconstruction</span></div>
+
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="checkbox"><span class="checkmark">✓</span></div>
+        <div class="check-content">
+          <div class="check-text">Reconstruct the full attack timeline: package repository compromise → CI/CD ingestion → build execution → deployment → runtime exploitation</div>
+          <div class="check-note">Map each stage to <span class="kw">MITRE ATT&CK</span> techniques. Document dwell time at each phase.</div>
+        </div>
+        <span class="priority-pill priority-high">HIGH</span>
+      </div>
+
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="checkbox"><span class="checkmark">✓</span></div>
+        <div class="check-content">
+          <div class="check-text">Investigate whether the threat actor achieved persistence — scheduled tasks, cron jobs, new service accounts, backdoored Docker images, Lambda layer injection</div>
+        </div>
+        <span class="priority-pill priority-crit">CRITICAL</span>
+      </div>
+
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="checkbox"><span class="checkmark">✓</span></div>
+        <div class="check-content">
+          <div class="check-text">Determine if the compromise was targeted (your org specifically) or opportunistic (broad campaign against all consumers of the package)</div>
+          <div class="check-note"><span class="kw">DISCUSSION:</span> Has this package compromise been publicly disclosed? Are peers in the industry affected? Should we share IOCs via ISAC?</div>
+        </div>
+        <span class="priority-pill priority-med">MED</span>
+      </div>
+
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="checkbox"><span class="checkmark">✓</span></div>
+        <div class="check-content">
+          <div class="check-text">Extract all IOCs: malicious package hash, C2 domains/IPs, exfiltration endpoints, dropped file hashes, registry keys, mutexes</div>
+        </div>
+        <span class="priority-pill priority-high">HIGH</span>
+      </div>
+
+      <div class="discussion-prompt">
+        <div class="dp-label">💬 Discussion Prompt</div>
+        <div class="dp-question">Our build environment runs with elevated permissions to access artifact registries and deploy to cloud. Could the attacker have used build-time execution to poison other artifacts or tamper with our release pipeline itself? How would we detect that?</div>
+      </div>
+
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="checkbox"><span class="checkmark">✓</span></div>
+        <div class="check-content">
+          <div class="check-text">Check for dependency confusion or typosquatting as the initial vector — verify the package name against known internal package names</div>
+          <div class="check-note"><span class="kw">Confusion attack:</span> attacker publishes a public package with the same name as your internal private package; resolver picks the higher version from public registry.</div>
+        </div>
+        <span class="priority-pill priority-high">HIGH</span>
+      </div>
+
+      <div class="notes-row">
+        <div class="notes-label">// Phase Notes</div>
+        <textarea class="notes-input" placeholder="Record investigation findings, IOCs, timeline reconstructions, and gaps in visibility..."></textarea>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════
+       PHASE 4 — ERADICATION & RECOVERY
+  ════════════════════════════════════════════════ -->
+  <div class="phase phase-4">
+    <div class="phase-header" onclick="togglePhase(this)">
+      <span class="phase-num">P-04</span>
+      <span class="phase-title">ERADICATION & RECOVERY</span>
+      <span class="phase-badge">REMEDIATE</span>
+      <span class="phase-chevron">▼</span>
+    </div>
+    <div class="phase-body">
+
+      <div class="separator"><span class="separator-label">Dependency Remediation</span></div>
+
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="checkbox"><span class="checkmark">✓</span></div>
+        <div class="check-content">
+          <div class="check-text">Update or replace the compromised dependency with a verified clean version — confirm patch or fork availability</div>
+          <div class="check-note"><span class="kw">Options:</span> Upgrade to patched version, vendor the dependency internally, fork and audit, remove entirely if non-essential.</div>
+        </div>
+        <span class="priority-pill priority-crit">CRITICAL</span>
+      </div>
+
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="checkbox"><span class="checkmark">✓</span></div>
+        <div class="check-content">
+          <div class="check-text">Rebuild all affected artifacts from clean source using a freshly provisioned build environment — do not reuse potentially tainted build agents</div>
+        </div>
+        <span class="priority-pill priority-crit">CRITICAL</span>
+      </div>
+
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="checkbox"><span class="checkmark">✓</span></div>
+        <div class="check-content">
+          <div class="check-text">Run SCA (Software Composition Analysis) and SAST scans against the rebuilt artifacts before re-deployment</div>
+          <div class="check-note"><span class="kw">Tools:</span> Snyk, OWASP Dependency-Check, Semgrep, Trivy, Grype.</div>
+        </div>
+        <span class="priority-pill priority-high">HIGH</span>
+      </div>
+
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="checkbox"><span class="checkmark">✓</span></div>
+        <div class="check-content">
+          <div class="check-text">Purge the malicious package version and all affected build artifacts from internal registries, caches, and artifact stores</div>
+        </div>
+        <span class="priority-pill priority-high">HIGH</span>
+      </div>
+
+      <div class="separator"><span class="separator-label">Infrastructure Remediation</span></div>
+
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="checkbox"><span class="checkmark">✓</span></div>
+        <div class="check-content">
+          <div class="check-text">Re-image or redeploy all hosts, containers, and serverless functions that executed the malicious code — do not trust in-place patching for confirmed compromised systems</div>
+        </div>
+        <span class="priority-pill priority-crit">CRITICAL</span>
+      </div>
+
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="checkbox"><span class="checkmark">✓</span></div>
+        <div class="check-content">
+          <div class="check-text">Restore systems from pre-compromise backups where available and verified clean</div>
+          <div class="check-note"><span class="kw">DISCUSSION:</span> Do our backups pre-date the first ingestion of the malicious package? What is the RTOs/RPO impact of restoring?</div>
+        </div>
+        <span class="priority-pill priority-high">HIGH</span>
+      </div>
+
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="checkbox"><span class="checkmark">✓</span></div>
+        <div class="check-content">
+          <div class="check-text">Audit and remove any persistence mechanisms identified during investigation (backdoor accounts, rogue cron jobs, unauthorized SSH keys, modified container base images)</div>
+        </div>
+        <span class="priority-pill priority-crit">CRITICAL</span>
+      </div>
+
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="checkbox"><span class="checkmark">✓</span></div>
+        <div class="check-content">
+          <div class="check-text">Validate integrity of the CI/CD pipeline itself — confirm no tampering with pipeline configs, Dockerfile base images, GitHub Actions, or build scripts</div>
+        </div>
+        <span class="priority-pill priority-high">HIGH</span>
+      </div>
+
+      <div class="discussion-prompt">
+        <div class="dp-label">💬 Discussion Prompt</div>
+        <div class="dp-question">How do we validate that our recovery is complete? What evidence would give us confidence that the attacker has been fully evicted and no persistence remains?</div>
+      </div>
+
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="checkbox"><span class="checkmark">✓</span></div>
+        <div class="check-content">
+          <div class="check-text">Communicate restoration timeline and status to affected internal stakeholders — engineering, product, legal, executive, and customers if required</div>
+        </div>
+        <span class="priority-pill priority-med">MED</span>
+      </div>
+
+      <div class="notes-row">
+        <div class="notes-label">// Phase Notes</div>
+        <textarea class="notes-input" placeholder="Record eradication steps taken, recovery decisions, and validation results..."></textarea>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════
+       PHASE 5 — POST-INCIDENT & HARDENING
+  ════════════════════════════════════════════════ -->
+  <div class="phase phase-5">
+    <div class="phase-header" onclick="togglePhase(this)">
+      <span class="phase-num">P-05</span>
+      <span class="phase-title">POST-INCIDENT & HARDENING</span>
+      <span class="phase-badge">IMPROVE</span>
+      <span class="phase-chevron">▼</span>
+    </div>
+    <div class="phase-body">
+
+      <div class="separator"><span class="separator-label">Communications & Compliance</span></div>
+
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="checkbox"><span class="checkmark">✓</span></div>
+        <div class="check-content">
+          <div class="check-text">Determine regulatory notification obligations — GDPR 72-hour window, state breach notification laws, SEC cyber disclosure, sector-specific requirements (PCI-DSS, HIPAA)</div>
+        </div>
+        <span class="priority-pill priority-crit">CRITICAL</span>
+      </div>
+
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="checkbox"><span class="checkmark">✓</span></div>
+        <div class="check-content">
+          <div class="check-text">Share IOCs and TTPs with relevant threat intelligence sharing communities (FS-ISAC, H-ISAC, CISA, internal peer network)</div>
+        </div>
+        <span class="priority-pill priority-med">MED</span>
+      </div>
+
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="checkbox"><span class="checkmark">✓</span></div>
+        <div class="check-content">
+          <div class="check-text">Complete a formal incident report documenting: timeline, root cause, systems affected, data accessed, actions taken, and business impact</div>
+        </div>
+        <span class="priority-pill priority-high">HIGH</span>
+      </div>
+
+      <div class="separator"><span class="separator-label">Process & Control Improvements</span></div>
+
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="checkbox"><span class="checkmark">✓</span></div>
+        <div class="check-content">
+          <div class="check-text">Implement or enforce SBOM generation for all builds — make it a mandatory CI artifact alongside build logs</div>
+          <div class="check-note"><span class="kw">Formats:</span> SPDX, CycloneDX. Integrate with <span class="kw">Dependency-Track</span> or similar for continuous monitoring.</div>
+        </div>
+        <span class="priority-pill priority-high">HIGH</span>
+      </div>
+
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="checkbox"><span class="checkmark">✓</span></div>
+        <div class="check-content">
+          <div class="check-text">Enforce package version pinning with integrity verification (hash-pinning / subresource integrity) across all package managers</div>
+          <div class="check-note">Require <span class="kw">--integrity</span> checks in npm, use <span class="kw">hashes</span> in pip requirements.txt, enforce <span class="kw">go.sum</span> verification.</div>
+        </div>
+        <span class="priority-pill priority-high">HIGH</span>
+      </div>
+
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="checkbox"><span class="checkmark">✓</span></div>
+        <div class="check-content">
+          <div class="check-text">Stand up or tune a private artifact proxy (Artifactory, Nexus, AWS CodeArtifact) to vet and cache approved package versions — eliminate direct internet pulls in builds</div>
+          <div class="check-note"><span class="kw">DISCUSSION:</span> Do we have an approved package vetting process? Who owns approvals and how fast can we approve a new package?</div>
+        </div>
+        <span class="priority-pill priority-high">HIGH</span>
+      </div>
+
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="checkbox"><span class="checkmark">✓</span></div>
+        <div class="check-content">
+          <div class="check-text">Integrate SCA tooling into CI pipelines as a blocking gate — fail builds on high/critical vulnerabilities in new or changed dependencies</div>
+        </div>
+        <span class="priority-pill priority-high">HIGH</span>
+      </div>
+
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="checkbox"><span class="checkmark">✓</span></div>
+        <div class="check-content">
+          <div class="check-text">Apply principle of least privilege to CI/CD pipeline service accounts — build agents should not have deploy or secrets access beyond what is required</div>
+        </div>
+        <span class="priority-pill priority-high">HIGH</span>
+      </div>
+
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="checkbox"><span class="checkmark">✓</span></div>
+        <div class="check-content">
+          <div class="check-text">Enable runtime behavioural monitoring on build agents and production hosts — alert on unexpected outbound connections or process spawning from package manager paths</div>
+        </div>
+        <span class="priority-pill priority-med">MED</span>
+      </div>
+
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="checkbox"><span class="checkmark">✓</span></div>
+        <div class="check-content">
+          <div class="check-text">Evaluate namespace reservation for internal package names on public registries to prevent dependency confusion attacks</div>
+          <div class="check-note">Reserve your org's internal package names on npm, PyPI, etc. even if you never publish them publicly.</div>
+        </div>
+        <span class="priority-pill priority-med">MED</span>
+      </div>
+
+      <div class="discussion-prompt">
+        <div class="dp-label">💬 Discussion Prompt</div>
+        <div class="dp-question">On a scale of 1–5, how mature is our supply chain security program today? What is the single highest-value control we could implement in the next 30 days? Who is the DRI?</div>
+      </div>
+
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="checkbox"><span class="checkmark">✓</span></div>
+        <div class="check-content">
+          <div class="check-text">Conduct a blameless post-mortem and document lessons learned — distribute action items with owners and deadlines</div>
+        </div>
+        <span class="priority-pill priority-high">HIGH</span>
+      </div>
+
+      <div class="notes-row">
+        <div class="notes-label">// Phase Notes & Action Items</div>
+        <textarea class="notes-input" placeholder="Record gaps identified, hardening commitments, owners, deadlines, and lessons learned..."></textarea>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- CONTROLS -->
+  <div class="controls">
+    <button class="btn btn-primary" onclick="exportSummary()">⬇ Export Summary</button>
+    <button class="btn btn-warn" onclick="printChecklist()">🖨 Print</button>
+    <button class="btn btn-danger" onclick="resetAll()">↺ Reset All</button>
+  </div>
+
+</div>
+
+<script>
+  // Set date
+  document.getElementById('ex-date').textContent = new Date().toLocaleDateString('en-US', {year:'numeric',month:'short',day:'numeric'});
+
+  function toggleCheck(item) {
+    item.classList.toggle('checked');
+    updateStats();
+  }
+
+  function togglePhase(header) {
+    const body = header.nextElementSibling;
+    const chevron = header.querySelector('.phase-chevron');
+    const collapsed = body.style.display === 'none';
+    body.style.display = collapsed ? '' : 'none';
+    chevron.textContent = collapsed ? '▼' : '▶';
+  }
+
+  function updateStats() {
+    const allItems = document.querySelectorAll('.check-item');
+    const checked = document.querySelectorAll('.check-item.checked');
+    const critItems = document.querySelectorAll('.check-item:not(.checked) .priority-crit');
+
+    const total = allItems.length;
+    const done = checked.length;
+    const pending = total - done;
+    const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+
+    document.getElementById('stat-total').textContent = total;
+    document.getElementById('stat-done').textContent = done;
+    document.getElementById('stat-pending').textContent = pending;
+    document.getElementById('stat-crit').textContent = critItems.length;
+    document.getElementById('progress-pct').textContent = pct + '%';
+    document.getElementById('progress-bar').style.width = pct + '%';
+  }
+
+  function resetAll() {
+    if (!confirm('Reset all checklist items?')) return;
+    document.querySelectorAll('.check-item.checked').forEach(i => i.classList.remove('checked'));
+    document.querySelectorAll('.notes-input').forEach(t => t.value = '');
+    updateStats();
+  }
+
+  function printChecklist() {
+    window.print();
+  }
+
+  function exportSummary() {
+    const allItems = document.querySelectorAll('.check-item');
+    const checked = document.querySelectorAll('.check-item.checked');
+    const pct = Math.round((checked.length / allItems.length) * 100);
+    const date = document.getElementById('ex-date').textContent;
+
+    let txt = `SUPPLY CHAIN TABLETOP — EXERCISE SUMMARY\n`;
+    txt += `Date: ${date}\n`;
+    txt += `Completion: ${checked.length}/${allItems.length} items (${pct}%)\n\n`;
+
+    document.querySelectorAll('.phase').forEach(phase => {
+      const title = phase.querySelector('.phase-title').textContent;
+      txt += `\n── ${title} ──\n`;
+      phase.querySelectorAll('.check-item').forEach(item => {
+        const status = item.classList.contains('checked') ? '[✓]' : '[ ]';
+        const text = item.querySelector('.check-text').textContent.trim();
+        txt += `  ${status} ${text}\n`;
+      });
+      const notes = phase.querySelector('.notes-input');
+      if (notes && notes.value.trim()) {
+        txt += `  NOTES: ${notes.value.trim()}\n`;
+      }
+    });
+
+    const blob = new Blob([txt], { type: 'text/plain' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `supply-chain-tabletop-${new Date().toISOString().slice(0,10)}.txt`;
+    a.click();
+  }
+
+  // Init stats
+  updateStats();
+</script>
+</body>
+</html>
