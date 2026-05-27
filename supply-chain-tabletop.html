@@ -704,6 +704,11 @@
 
       <div class="discussion-prompt">
         <div class="dp-label">💬 Discussion Prompt</div>
+        <div class="dp-question">How far back do our build logs and artifact pull records go? If the malicious version was ingested 60 days ago, could we reliably reconstruct the timeline — or does our log retention create a blind spot in the dwell time calculation?</div>
+      </div>
+
+      <div class="discussion-prompt">
+        <div class="dp-label">💬 Discussion Prompt</div>
         <div class="dp-question">Do we have a software bill of materials (SBOM) for affected services? If not, how long would it take us to generate one? Who owns that process?</div>
       </div>
 
@@ -718,12 +723,22 @@
         <span class="priority-pill priority-crit">CRITICAL</span>
       </div>
 
+      <div class="discussion-prompt">
+        <div class="dp-label">💬 Discussion Prompt</div>
+        <div class="dp-question">Do we have a centralised inventory of all software dependencies across every team and repo? If different teams manage their own dependency trees independently, how confident are we that our blast radius assessment is complete — and not just the services we know about?</div>
+      </div>
+
       <div class="check-item" onclick="toggleCheck(this)">
         <div class="checkbox"><span class="checkmark">✓</span></div>
         <div class="check-content">
           <div class="check-text">Determine which environments have executed code from the malicious build: dev, staging, production, CI/CD agents</div>
         </div>
         <span class="priority-pill priority-crit">CRITICAL</span>
+      </div>
+
+      <div class="discussion-prompt">
+        <div class="dp-label">💬 Discussion Prompt</div>
+        <div class="dp-question">Are our dev and staging environments treated as lower-trust zones with restricted access to production secrets and data? Or do they share credentials, service accounts, or network segments with production — meaning a compromise in dev could still be a production-level breach?</div>
       </div>
 
       <div class="check-item" onclick="toggleCheck(this)">
@@ -742,6 +757,11 @@
           <div class="check-note">Perform static analysis in an isolated sandbox. Map behavior to <span class="kw">MITRE ATT&CK T1195.001, T1059, T1041.</span></div>
         </div>
         <span class="priority-pill priority-crit">CRITICAL</span>
+      </div>
+
+      <div class="discussion-prompt">
+        <div class="dp-label">💬 Discussion Prompt</div>
+        <div class="dp-question">Do we have an isolated malware analysis sandbox available to reverse-engineer the malicious package? If we hand off to an external party for analysis, what data handling and NDA obligations apply — and could sharing the sample itself constitute a data disclosure?</div>
       </div>
 
       <div class="notes-row">
@@ -792,12 +812,22 @@
         <span class="priority-pill priority-crit">CRITICAL</span>
       </div>
 
+      <div class="discussion-prompt">
+        <div class="dp-label">💬 Discussion Prompt</div>
+        <div class="dp-question">If a critical hotfix or regulatory-mandated patch needs to go out during the deployment freeze, what is our emergency exception process? Who can authorize it, and what additional verification steps are required before allowing that build through?</div>
+      </div>
+
       <div class="check-item" onclick="toggleCheck(this)">
         <div class="checkbox"><span class="checkmark">✓</span></div>
         <div class="check-content">
           <div class="check-text">Isolate affected production hosts or containers from the network if active exploitation/C2 activity is confirmed</div>
         </div>
         <span class="priority-pill priority-high">HIGH</span>
+      </div>
+
+      <div class="discussion-prompt">
+        <div class="dp-label">💬 Discussion Prompt</div>
+        <div class="dp-question">What is the operational impact of taking affected production containers offline — are there SLAs, customer-facing services, or safety-critical functions that would be disrupted? Do we have a pre-approved runbook for isolating services that weighs security response against availability obligations?</div>
       </div>
 
       <div class="check-item" onclick="toggleCheck(this)">
@@ -807,6 +837,11 @@
           <div class="check-note">Push <span class="kw">IOC blocklists</span> to proxy, firewall, DNS sinkhole, and EDR platform simultaneously.</div>
         </div>
         <span class="priority-pill priority-high">HIGH</span>
+      </div>
+
+      <div class="discussion-prompt">
+        <div class="dp-label">💬 Discussion Prompt</div>
+        <div class="dp-question">If the malware uses domain generation algorithms (DGA) or rotates C2 infrastructure frequently, blocking known IPs and domains is reactive at best. Do we have behavioural detections — e.g., unusual beacon intervals, JA3/JA3S TLS fingerprinting, or DNS entropy scoring — that can catch novel C2 channels we haven't seen yet?</div>
       </div>
 
       <div class="separator"><span class="separator-label">Credential & Secrets Management</span></div>
@@ -828,6 +863,11 @@
         <span class="priority-pill priority-high">HIGH</span>
       </div>
 
+      <div class="discussion-prompt">
+        <div class="dp-label">💬 Discussion Prompt</div>
+        <div class="dp-question">Are secrets accessed by our applications injected at runtime or baked into environment variables at build time? If they're baked in, rotating the secrets manager value alone may not be sufficient — the old value may persist in container images, environment configs, or orchestration platform metadata. How do we ensure full rotation propagates everywhere?</div>
+      </div>
+
       <div class="check-item" onclick="toggleCheck(this)">
         <div class="checkbox"><span class="checkmark">✓</span></div>
         <div class="check-content">
@@ -843,6 +883,11 @@
           <div class="check-text">Check build environment and CI agents for any persistence mechanisms planted during execution of the malicious code</div>
         </div>
         <span class="priority-pill priority-high">HIGH</span>
+      </div>
+
+      <div class="discussion-prompt">
+        <div class="dp-label">💬 Discussion Prompt</div>
+        <div class="dp-question">Are our CI/CD build agents ephemeral — spun up fresh for each build and destroyed afterward — or are they long-lived persistent VMs? If persistent, a backdoor planted during one build could silently affect every subsequent build. How do we verify agent integrity between runs?</div>
       </div>
 
       <div class="discussion-prompt">
@@ -881,6 +926,11 @@
         <span class="priority-pill priority-crit">CRITICAL</span>
       </div>
 
+      <div class="discussion-prompt">
+        <div class="dp-label">💬 Discussion Prompt</div>
+        <div class="dp-question">Do we have full-packet capture or only flow/metadata logs? If the exfiltration used HTTPS to a legitimate-looking CDN or cloud provider endpoint, would our proxy logs have the content or only connection metadata? What visibility gaps exist in our network logging stack that an attacker could exploit to exfiltrate data undetected?</div>
+      </div>
+
       <div class="check-item" onclick="toggleCheck(this)">
         <div class="checkbox"><span class="checkmark">✓</span></div>
         <div class="check-content">
@@ -889,12 +939,22 @@
         <span class="priority-pill priority-crit">CRITICAL</span>
       </div>
 
+      <div class="discussion-prompt">
+        <div class="dp-label">💬 Discussion Prompt</div>
+        <div class="dp-question">How much detail do our pipeline execution logs capture? If a build step invoked a shell command or made an outbound call, would it appear in the log — or does our CI platform only log exit codes and step names? What would we need to enable to get command-level audit visibility during builds?</div>
+      </div>
+
       <div class="check-item" onclick="toggleCheck(this)">
         <div class="checkbox"><span class="checkmark">✓</span></div>
         <div class="check-content">
           <div class="check-text">Audit cloud provider access logs (CloudTrail, Azure Monitor, GCP Audit) for anomalous API calls from affected services during the compromise window</div>
         </div>
         <span class="priority-pill priority-high">HIGH</span>
+      </div>
+
+      <div class="discussion-prompt">
+        <div class="dp-label">💬 Discussion Prompt</div>
+        <div class="dp-question">Are cloud audit logs forwarded to a SIEM that is separate from the compromised environment — or do they live in the same cloud account that may have been accessed? If an attacker had sufficient IAM permissions, could they have tampered with or deleted CloudTrail/audit logs to cover their tracks before we started looking?</div>
       </div>
 
       <div class="check-item" onclick="toggleCheck(this)">
@@ -917,12 +977,22 @@
         <span class="priority-pill priority-high">HIGH</span>
       </div>
 
+      <div class="discussion-prompt">
+        <div class="dp-label">💬 Discussion Prompt</div>
+        <div class="dp-question">When we map the dwell time across each stage — from initial ingestion to first detection — where is the largest gap? Was it in detection capability, alert triage time, or escalation and response speed? Which stage represents our biggest opportunity to shorten time-to-respond in a future incident?</div>
+      </div>
+
       <div class="check-item" onclick="toggleCheck(this)">
         <div class="checkbox"><span class="checkmark">✓</span></div>
         <div class="check-content">
           <div class="check-text">Investigate whether the threat actor achieved persistence — scheduled tasks, cron jobs, new service accounts, backdoored Docker images, Lambda layer injection</div>
         </div>
         <span class="priority-pill priority-crit">CRITICAL</span>
+      </div>
+
+      <div class="discussion-prompt">
+        <div class="dp-label">💬 Discussion Prompt</div>
+        <div class="dp-question">If persistence was achieved inside a container image that has since been pushed to our registry and pulled by dozens of services, how do we systematically identify and quarantine every running instance? Do we have an image provenance and lineage tracking capability, or would we need to manually hunt across all running workloads?</div>
       </div>
 
       <div class="check-item" onclick="toggleCheck(this)">
@@ -944,6 +1014,11 @@
 
       <div class="discussion-prompt">
         <div class="dp-label">💬 Discussion Prompt</div>
+        <div class="dp-question">Once we have IOCs, what is our process for operationalising them — pushing to EDR, SIEM, firewall, and threat intel platform — within a time-bounded SLA? And do we track which IOCs have been deployed to which controls, so we can verify coverage without relying on assumption?</div>
+      </div>
+
+      <div class="discussion-prompt">
+        <div class="dp-label">💬 Discussion Prompt</div>
         <div class="dp-question">Our build environment runs with elevated permissions to access artifact registries and deploy to cloud. Could the attacker have used build-time execution to poison other artifacts or tamper with our release pipeline itself? How would we detect that?</div>
       </div>
 
@@ -954,6 +1029,11 @@
           <div class="check-note"><span class="kw">Confusion attack:</span> attacker publishes a public package with the same name as your internal private package; resolver picks the higher version from public registry.</div>
         </div>
         <span class="priority-pill priority-high">HIGH</span>
+      </div>
+
+      <div class="discussion-prompt">
+        <div class="dp-label">💬 Discussion Prompt</div>
+        <div class="dp-question">If this was a dependency confusion attack, does our package manager configuration explicitly prefer our private registry over public sources — or does it fall back to public registries automatically? Have we audited every package manager config file across all repos for correct registry priority order?</div>
       </div>
 
       <div class="notes-row">
@@ -995,6 +1075,11 @@
         <span class="priority-pill priority-crit">CRITICAL</span>
       </div>
 
+      <div class="discussion-prompt">
+        <div class="dp-label">💬 Discussion Prompt</div>
+        <div class="dp-question">When we provision a "clean" build environment, what is our trust anchor — are we building from a known-good base image with a verified hash, or pulling the latest from a registry that could itself have been tampered with? How do we establish and verify a trusted baseline before treating a new build agent as clean?</div>
+      </div>
+
       <div class="check-item" onclick="toggleCheck(this)">
         <div class="checkbox"><span class="checkmark">✓</span></div>
         <div class="check-content">
@@ -1002,6 +1087,11 @@
           <div class="check-note"><span class="kw">Tools:</span> Snyk, OWASP Dependency-Check, Semgrep, Trivy, Grype.</div>
         </div>
         <span class="priority-pill priority-high">HIGH</span>
+      </div>
+
+      <div class="discussion-prompt">
+        <div class="dp-label">💬 Discussion Prompt</div>
+        <div class="dp-question">SCA tools rely on known vulnerability databases — they won't catch a novel malicious package that has no CVE yet. What additional verification steps do we apply beyond SCA to gain confidence in the clean build: code review, manual inspection of the replaced dependency, or behavioural testing in an isolated staging environment?</div>
       </div>
 
       <div class="check-item" onclick="toggleCheck(this)">
@@ -1012,6 +1102,11 @@
         <span class="priority-pill priority-high">HIGH</span>
       </div>
 
+      <div class="discussion-prompt">
+        <div class="dp-label">💬 Discussion Prompt</div>
+        <div class="dp-question">Beyond our primary artifact registry, where else might this package version be cached — developer workstations, local Docker layer caches, edge caches in our CDN, or CI agent workspace directories? How do we ensure the malicious version is not silently re-used from a stale local cache the next time someone runs a build?</div>
+      </div>
+
       <div class="separator"><span class="separator-label">Infrastructure Remediation</span></div>
 
       <div class="check-item" onclick="toggleCheck(this)">
@@ -1020,6 +1115,11 @@
           <div class="check-text">Re-image or redeploy all hosts, containers, and serverless functions that executed the malicious code — do not trust in-place patching for confirmed compromised systems</div>
         </div>
         <span class="priority-pill priority-crit">CRITICAL</span>
+      </div>
+
+      <div class="discussion-prompt">
+        <div class="dp-label">💬 Discussion Prompt</div>
+        <div class="dp-question">For stateful workloads — databases, message queues, caches — that cannot simply be re-imaged without data loss, what is our process for verifying their integrity? If a malicious process wrote data to a database or queue during the compromise window, how do we identify and cleanse those records without losing legitimate production data?</div>
       </div>
 
       <div class="check-item" onclick="toggleCheck(this)">
@@ -1049,6 +1149,11 @@
 
       <div class="discussion-prompt">
         <div class="dp-label">💬 Discussion Prompt</div>
+        <div class="dp-question">Do we pin GitHub Actions and third-party pipeline actions to specific commit SHAs rather than mutable tags like <code style="color:var(--accent);font-family:var(--font-mono)">@main</code> or <code style="color:var(--accent);font-family:var(--font-mono)">@v2</code>? If not, a compromised action maintainer could push malicious code under an existing version tag and our pipelines would silently adopt it on the next run — with no change to our own code. Is this on our hardening backlog?</div>
+      </div>
+
+      <div class="discussion-prompt">
+        <div class="dp-label">💬 Discussion Prompt</div>
         <div class="dp-question">How do we validate that our recovery is complete? What evidence would give us confidence that the attacker has been fully evicted and no persistence remains?</div>
       </div>
 
@@ -1058,6 +1163,11 @@
           <div class="check-text">Communicate restoration timeline and status to affected internal stakeholders — engineering, product, legal, executive, and customers if required</div>
         </div>
         <span class="priority-pill priority-med">MED</span>
+      </div>
+
+      <div class="discussion-prompt">
+        <div class="dp-label">💬 Discussion Prompt</div>
+        <div class="dp-question">At what point in this incident did executive leadership and legal become aware? If the answer is "not yet" or "when the deployment freeze was noticed," do we have a pre-defined escalation threshold — e.g., confirmed data exfiltration, production impact, or customer data in scope — that automatically triggers notification up the chain, rather than leaving that call to the IR team?</div>
       </div>
 
       <div class="notes-row">
@@ -1090,6 +1200,11 @@
         <span class="priority-pill priority-crit">CRITICAL</span>
       </div>
 
+      <div class="discussion-prompt">
+        <div class="dp-label">💬 Discussion Prompt</div>
+        <div class="dp-question">We may not yet know for certain whether personal data was exfiltrated — only that the malicious code had access to systems that process it. Under GDPR Article 33, the clock starts when we become "aware" of a breach, not when it's confirmed. At what point in this scenario did we cross that threshold, and is our legal team aligned with that interpretation?</div>
+      </div>
+
       <div class="check-item" onclick="toggleCheck(this)">
         <div class="checkbox"><span class="checkmark">✓</span></div>
         <div class="check-content">
@@ -1098,12 +1213,22 @@
         <span class="priority-pill priority-med">MED</span>
       </div>
 
+      <div class="discussion-prompt">
+        <div class="dp-label">💬 Discussion Prompt</div>
+        <div class="dp-question">Does our organisation have legal clearance and a defined process for sharing incident details externally — including which data can be shared, in what format (STIX/TAXII, TLP markings), and who has authority to approve the disclosure? Have we considered that sharing too early, before legal review, could expose us to liability or breach NDA obligations with third parties?</div>
+      </div>
+
       <div class="check-item" onclick="toggleCheck(this)">
         <div class="checkbox"><span class="checkmark">✓</span></div>
         <div class="check-content">
           <div class="check-text">Complete a formal incident report documenting: timeline, root cause, systems affected, data accessed, actions taken, and business impact</div>
         </div>
         <span class="priority-pill priority-high">HIGH</span>
+      </div>
+
+      <div class="discussion-prompt">
+        <div class="dp-label">💬 Discussion Prompt</div>
+        <div class="dp-question">Who is the authoritative owner of the incident report, and how do we handle conflicting accounts from different teams about the timeline or decisions made under pressure? Is there a process to reconcile discrepancies before the report is finalised — and is the report stored somewhere an attacker with our access couldn't modify it after the fact?</div>
       </div>
 
       <div class="separator"><span class="separator-label">Process & Control Improvements</span></div>
@@ -1115,6 +1240,11 @@
           <div class="check-note"><span class="kw">Formats:</span> SPDX, CycloneDX. Integrate with <span class="kw">Dependency-Track</span> or similar for continuous monitoring.</div>
         </div>
         <span class="priority-pill priority-high">HIGH</span>
+      </div>
+
+      <div class="discussion-prompt">
+        <div class="dp-label">💬 Discussion Prompt</div>
+        <div class="dp-question">Generating an SBOM is only half the value — the other half is actively monitoring it. If a new vulnerability is disclosed tomorrow for a package we ingested six months ago, do we have a process that cross-references that CVE against our historical SBOMs and surfaces which currently running services are affected? Or does that analysis only happen manually at incident time?</div>
       </div>
 
       <div class="check-item" onclick="toggleCheck(this)">
@@ -1143,6 +1273,11 @@
         <span class="priority-pill priority-high">HIGH</span>
       </div>
 
+      <div class="discussion-prompt">
+        <div class="dp-label">💬 Discussion Prompt</div>
+        <div class="dp-question">SCA blocking gates create friction that engineering teams are incentivised to work around — suppressing findings, adding exceptions, or bypassing the check to hit a deadline. What governance do we have over exception approvals? Is there a risk of exception fatigue normalising the dismissal of genuine threats?</div>
+      </div>
+
       <div class="check-item" onclick="toggleCheck(this)">
         <div class="checkbox"><span class="checkmark">✓</span></div>
         <div class="check-content">
@@ -1151,12 +1286,22 @@
         <span class="priority-pill priority-high">HIGH</span>
       </div>
 
+      <div class="discussion-prompt">
+        <div class="dp-label">💬 Discussion Prompt</div>
+        <div class="dp-question">In this incident, what was the most privileged credential accessible to the compromised build environment? If that credential had been used maliciously, what is the worst thing an attacker could have done with it — and is that worst-case outcome acceptable given the current privilege level? Use this to drive a concrete least-privilege remediation discussion.</div>
+      </div>
+
       <div class="check-item" onclick="toggleCheck(this)">
         <div class="checkbox"><span class="checkmark">✓</span></div>
         <div class="check-content">
           <div class="check-text">Enable runtime behavioural monitoring on build agents and production hosts — alert on unexpected outbound connections or process spawning from package manager paths</div>
         </div>
         <span class="priority-pill priority-med">MED</span>
+      </div>
+
+      <div class="discussion-prompt">
+        <div class="dp-label">💬 Discussion Prompt</div>
+        <div class="dp-question">Runtime monitoring on build agents generates significant noise — every install, compilation, and test run touches the filesystem and network. How do we baseline "normal" build behaviour so that anomalous activity by a malicious package stands out, rather than being lost in the volume of legitimate build events?</div>
       </div>
 
       <div class="check-item" onclick="toggleCheck(this)">
@@ -1170,6 +1315,11 @@
 
       <div class="discussion-prompt">
         <div class="dp-label">💬 Discussion Prompt</div>
+        <div class="dp-question">Do we have a current, authoritative list of every internal package name used across all teams? Without that inventory, namespace reservation is incomplete — there may be internal packages we're unaware of that remain vulnerable. Who is responsible for maintaining that list, and how would we know if a new internal package name was introduced without being reserved on public registries?</div>
+      </div>
+
+      <div class="discussion-prompt">
+        <div class="dp-label">💬 Discussion Prompt</div>
         <div class="dp-question">On a scale of 1–5, how mature is our supply chain security program today? What is the single highest-value control we could implement in the next 30 days? Who is the DRI?</div>
       </div>
 
@@ -1179,6 +1329,11 @@
           <div class="check-text">Conduct a blameless post-mortem and document lessons learned — distribute action items with owners and deadlines</div>
         </div>
         <span class="priority-pill priority-high">HIGH</span>
+      </div>
+
+      <div class="discussion-prompt">
+        <div class="dp-label">💬 Discussion Prompt</div>
+        <div class="dp-question">Looking back at this exercise: which action items from today will actually get completed, and which will stall under normal delivery pressure? What accountability mechanism — executive sponsorship, a security roadmap OKR, or a recurring review — ensures these improvements are tracked to closure rather than documented and forgotten?</div>
       </div>
 
       <div class="notes-row">
